@@ -60,3 +60,8 @@ class Message:
         val = struct.unpack('f', self.buf[self.ptr:self.ptr + 4])
         self.ptr += 4
         return val
+
+    def eom(self):
+        if self.ptr >= len(self.buf):
+            return True
+        return False
