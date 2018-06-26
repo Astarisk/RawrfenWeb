@@ -1,11 +1,45 @@
 import struct
+from coord import Coord
+
+
+# TODO: Move this elsewhere I'd say, just having it here for now so I can make the add_list and get_list
+class Color:
+    # red, green, blue, alpha
+    def __init__(self, r, g, b, a):
+        self.r = r
+        self.g = g
+        self.b = b
+        self.a = a
 
 
 class Message:
 
+    T_END = 0
+    T_INT = 1
+    T_STR = 2
+    T_COORD = 3
+    T_UINT8 = 4
+    T_UINT16 = 5
+    T_COLOR = 6
+    T_TTOL = 8
+    T_INT8 = 9
+    T_INT16 = 10
+    T_NIL = 12
+    T_UID = 13
+    T_BYTES = 14
+    T_FLOAT32 = 15
+    T_FLOAT64 = 16
+    T_FCOORD32 = 18
+    T_FCOORD64 = 19
+
     def __init__(self, buf=bytearray()):
         self.ptr = 0
         self.buf = bytearray(buf)
+
+    def read_bytes(self, len):
+        val = self.buf[self.ptr:self.ptr + len]
+        ptr += len
+        return  val
 
     def read_int8(self):
         pass
@@ -61,6 +95,70 @@ class Message:
         self.ptr += 4
         return val
 
+    def read_float64(self):
+        # 'd' represents a double format
+        val = struct.unpack('d', self.buf[self.ptr:self.ptr + 8])
+        self.ptr += 8
+        return val
+
+    def read_coord(self):
+        return Coord(self.read_int32, self.read_int32)
+
+    def read_color(self):
+        return Color(self.read_uint8(), self.read_uint8(), self.read_uint8(), self.read_uint8())
+
+    def read_list(self):
+        vals = []
+
+        while True:
+            if self.eom():
+                break
+
+            t = self.read_uint8()
+
+            if t == Message.T_END:
+                break
+            elif t == Message.T_INT:
+                vals.append(self.read_int32())
+            elif t == Message.T_STR:
+                vals.append(self.read_string())
+            elif t == Message.T_COORD:
+                vals.append(self.read_coord())
+            elif t == Message.T_UINT8:
+                vals.append(self.read_uint8())
+            elif t == Message.T_UINT16:
+                vals.append(self.read_uint8())
+            elif t == Message.T_INT8:
+                vals.append(self.read_int8())
+            elif t == Message.T_INT16:
+                vals.append(self.read_int16())
+            elif t == Message.T_COLOR:
+                vals.append(self.read_color())
+            elif t == Message.T_TTOL:
+                vals.append(self.read_list())
+            elif t == Message.T_NIL:
+                vals.append(0)
+            elif t == Message.T_UID:
+                vals.append(self.read_int64())
+            elif t == Message.T_BYTES:
+                length = self.read_uint8()
+
+                if (length & 128) != 0:
+                    length = self.read_int32()
+                vals.append(self.read_bytes(length))
+            elif t == Message.T_FLOAT32:
+                vals.append(self.read_float32())
+            elif t == Message.T_FLOAT64:
+                vals.append(self.read_float64())
+            elif t == Message.T_FCOORD32:
+                #vals.append()
+                print("FCoord32 is not implemented yet.")
+            elif t == Message.T_FCOORD64:
+                #vals.append()
+                print("FCoord64 is not implemented yet.")
+            else:
+                print("Type not found when reading.")
+
     def eom(self):
         if self.ptr >= len(self.buf):
             return True
@@ -100,3 +198,47 @@ class Message:
         self.buf.extend(val.encode(enc))
         # Loftar uses 0 to signify end of string
         self.buf.append(0)
+
+    def add_float32(self, val):
+        # 'f' represents a float format
+        self.buf.extend(struct.pack('f', val))
+
+    def add_list(self, list_):
+        for l in list_:
+            if l is None:
+                self.add_uint8(Message.T_NIL)
+            elif l is int:
+                self.add_uint8(Message.T_INT)
+                self.add_int32(l)
+            # TODO: Check how this behaves with unicode? and just plain ascii? isinstance(s, unicode):
+            # Python 3 says all strings are unicode, so who knows what happens...
+            elif l is str:
+                self.add_uint8(Message.T_STR)
+                self.add_string(l)
+            elif l is Coord:
+                self.add_uint8(Message.T_COORD)
+                # TODO: Could just make a addcoord method like loftar does...
+                self.add_int32(l.x)
+                self.add_int32(l.y)
+            elif l is bytearray:
+                self.add_uint8(Message.T_BYTES)
+                if len(l) < 128:
+                    self.add_uint8(len(l))
+                else:
+                    self.add_uint8(0x80)
+                    self.add_int32(len(l))
+                self.add_bytes(l)
+            elif l is Color:
+                self.add_uint8(Message.T_COLOR)
+                self.add_uint8(l.r)
+                self.add_uint8(l.g)
+                self.add_uint8(l.b)
+                self.add_uint8(l.a)
+            elif l is float:
+                self.add_uint8(Message.T_FLOAT32)
+                self.add_float32(l)
+            # TODO: There is suppose to be a double condition here, but I feel like I need to differentiate between
+            # a float and a double, and I dont know quite how to do that. In python a float is a double, so even the
+            # above might not fully work. sys.getsizeof may work, Would need some testing.... A float in python is 64.
+
+
