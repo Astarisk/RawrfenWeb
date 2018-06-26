@@ -65,3 +65,38 @@ class Message:
         if self.ptr >= len(self.buf):
             return True
         return False
+
+    # Loftar uses a rbuf and wbuf byte arrays for read and write seperation, being python I'll just combine it into the
+    # same one
+
+    def add_bytes(self, val):
+        self.buf.extend(val)
+
+    def add_uint8(self, val):
+        self.buf.extend(struct.pack(val))
+
+    def add_int16(self, val):
+        # 'h' represents a short format
+        self.buf.extend(struct.pack('h', val))
+
+    def add_uint16(self, val):
+        # 'H' represents an unsigned short format
+        self.buf.extend(struct.pack('H', val))
+
+    def add_int32(self, val):
+        # 'i' represents an int format
+        self.buf.extend(struct.pack('i', val))
+
+    def add_uint32(self, val):
+        # 'I' represents an unsigned int format
+        self.buf.extend(struct.pack('I', val))
+
+    def add_int64(self, val):
+        # 'q' represents a long long format
+        self.buf.extend(struct.pack('q', val))
+
+    def add_string(self, val, enc="utf-8"):
+        # Encode the string into the proper format
+        self.buf.extend(val.encode(enc))
+        # Loftar uses 0 to signify end of string
+        self.buf.append(0)
