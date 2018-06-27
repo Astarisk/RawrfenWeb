@@ -39,6 +39,15 @@ class AuthClient:
         else:
             raise AuthException("Unexpected reply `" + stat + "' from auth server")
 
+    def get_cookie(self):
+        rpl = self.cmd("cookie")
+        stat = rpl.read_string()
+
+        if stat == "ok":
+            return rpl.read_bytes(32)
+        else:
+            raise AuthException("Unexpected reply `" + stat + "' from auth server")
+
     def sendmsg(self, msg):
         if len(msg.buf) > 65535:
             print("Message is too large")
