@@ -6,8 +6,10 @@ from message import Message
 
 
 class Session:
-    # Message types
+    # Client version
     PVER = 15
+
+    # Message types
     MSG_SESS = 0
     MSG_REL = 1
     MSG_ACK = 2
@@ -23,9 +25,9 @@ class Session:
     SESSERR_PVER = 4
     SESSERR_EXPR = 5
 
-    def __init__(self, server, port, username, cookie, args):
+    def __init__(self, host, port, username, cookie, args=None):
         # Connection information
-        self.server = server
+        self.host = host
         self.port = port
         self.username = username
         self.cookie = cookie
@@ -34,7 +36,12 @@ class Session:
         self.args = args
 
         # Socket for the connection
-        self.sk = None
+        #try:
+        self.sk = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.sk.connect((self.host, self.port))
+        #except Exception as e:
+            #print("Socket connection failure")
+            #print(e)
 
         # State of the connection for the game
         self.state = "conn"
@@ -52,9 +59,9 @@ class Session:
         self.sworkerThread.start()
 
         # "Server time ticker"
-        self.tickerThread = threading.Thread(target=self.ticker)
-        self.tickerThread.daemon = True
-        self.tickerThread.start()
+        #self.tickerThread = threading.Thread(target=self.ticker)
+        #self.tickerThread.daemon = True
+        #self.tickerThread.start()
 
     def rworker(self):
         # This for now is really just a dirty implementation of the run method
@@ -62,33 +69,42 @@ class Session:
         alive = True
 
         while alive:
-            try:
-                msg = self.recv_msg()
-                msg_type = msg.read_uint8()
+            #try:
+            print("RWORKER")
+            # TODO: !p.getSocketAddress().equals(server)).. check for address
+            print("waiting on a message...")
+            msg = self.recv_msg()
+            print("grabbing message type...")
+            msg_type = msg.read_uint8()
+            data = msg.buf[msg.ptr:len(msg.buf)]
+            if msg_type == Session.MSG_SESS:
+                self.msg_sess(Message(data))
+            if msg_type == Session.MSG_REL:
+                pass
+            if msg_type == Session.MSG_ACK:
+                pass
+            if msg_type == Session.MSG_MAPDATA:
+                pass
+            if msg_type == Session.MSG_OBJDATA:
+                pass
+            if msg_type == Session.MSG_CLOSE:
+                pass
 
-                if msg_type == Session.MSG_SESS:
-                    self.msg_sess(msg)
-                if msg_type == Session.MSG_REL:
-                    pass
-                if msg_type == Session.MSG_ACK:
-                    pass
-                if msg_type == Session.MSG_MAPDATA:
-                    pass
-                if msg_type == Session.MSG_OBJDATA:
-                    pass
-                if msg_type == Session.MSG_CLOSE:
-                    pass
-
-            except Exception as e:
+            #except Exception as e:
                 # TODO: Create a more defined excpetion
-                print("Make a real exception later...")
+                #print("Make a real exception later...")
+               #print(e)
 
     # Recieves the message from the socket
     def recv_msg(self):
+        print("Recieving a message...")
         # socket.recvfrom(bufsize) returns data and address of socket
+        # DatagramPacket p = new DatagramPacket(new byte[65536], 65536)
         data, addr = self.sk.recvfrom(65536)
-
+        print("Message recieved...")
+        print(">>> " + str(data))
         # TODO: Check the address and compare it to the servers, a little safety check
+        # ('213.239.201.139', 1870) python saves this as a tuple
         print(addr)
 
         # Stores the data in a Packet Message
@@ -99,15 +115,17 @@ class Session:
 
         # TODO: I can either remake his PMessage to handle types or include it all in Message. For now this isn't a concern.
         msg = Message(data)
-
+        print("Returing recieved message...")
         return msg
 
     def msg_sess(self, msg):
+        print("Reading a msg_sess")
         if self.state == "conn":
-            error = msg.read_uint8
-
+            error = msg.read_uint8()
+            print("error: " + str(error))
             if error == 0:
-                state = ""
+                print("State is connected...")
+                self.state = ""
             else:
                 # TODO: Close the connection
                 pass
@@ -121,18 +139,27 @@ class Session:
             now = int(time.time())
 
             if self.state == "conn":
+                #print("Stats is conn")
                 if now - last > 2:
+                    print("Trying to conn...")
                     if retries > 5:
+                        print("Failed to connect 5 times...")
                         # TODO: Properly set this to closed.
                         self.state = ""
                         return
 
                     # TODO: Session Log in Goes here
-
+                    print("Sess login")
+                    self.sess_login()
+                    print("Tried to connect...")
                     last = now
+                    print("Now updated..")
                     retries = retries + 1
+                    print("retry incremented...")
                     time.sleep(0.1)
+                    print("Looping again...")
                 else:
+                    #print("Session is now connected to the server")
                     # The session is connected to the server.
                     now = int(time.time())
 
@@ -146,7 +173,9 @@ class Session:
                             last = now
 
     def sess_login(self):
+        print("Forming login message")
         msg = Message()
+        msg.add_uint8(Session.MSG_SESS)
         msg.add_uint16(2)
         # Client identification name for Loftar's stats
         msg.add_string("Hafen")
@@ -155,15 +184,28 @@ class Session:
         msg.add_string(self.username)
         msg.add_uint16(len(self.cookie))
         msg.add_bytes(self.cookie)
+        print("Message being sent off")
+        self.send_msg(msg)
        # msg.add_list(self.args)
 
     def beat(self):
+        print("Sending a beat...")
         msg = Message()
         msg.add_uint8(Session.MSG_BEAT)
         self.send_msg(msg)
 
     def send_msg(self, msg):
-        self.sk.sendto(msg.buf, (self.username, self.port))
+        print("Sending a message...")
+        print(">>>" + str(msg.buf))
+        #try:
+            #print(self.sk)
+        succ = self.sk.sendall(msg.buf)
+            #succ = self.sk.send(msg.buf)
+        print("Success: " + str(succ))
+        #except Exception as e:
+            #print(e)
+        print("Message sent...")
 
     def ticker(self):
         pass
+
