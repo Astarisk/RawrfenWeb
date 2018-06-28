@@ -21,21 +21,16 @@ class AuthClient:
         #    self.sk.close()
 
     def login(self, username, pw):
-        msg = Message()
-        msg.add_string('pw')
-        msg.add_string(username)
         pw = hashlib.sha256(bytearray(pw, "utf-8"))
         dig = pw.digest()
 
-        rpl = self.cmd("pw", "alg4", dig)
+        rpl = self.cmd("pw", username, dig)
         stat = rpl.read_string()
 
         if stat == "ok":
             acc = rpl.read_string()
-            print(acc)
         elif stat == "no":
             err = rpl.read_string()
-            print(err)
         else:
             raise AuthException("Unexpected reply `" + stat + "' from auth server")
 
