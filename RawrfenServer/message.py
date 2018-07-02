@@ -250,20 +250,20 @@ class Message:
         for l in list_:
             if l is None:
                 self.add_uint8(Message.T_NIL)
-            elif l is int:
+            elif type(l) == int:
                 self.add_uint8(Message.T_INT)
                 self.add_int32(l)
             # TODO: Check how this behaves with unicode? and just plain ascii? isinstance(s, unicode):
             # Python 3 says all strings are unicode, so who knows what happens...
-            elif l is str:
+            elif type(l) == str:
                 self.add_uint8(Message.T_STR)
                 self.add_string(l)
-            elif l is Coord:
+            elif type(l) == Coord:
                 self.add_uint8(Message.T_COORD)
                 # TODO: Could just make a addcoord method like loftar does...
                 self.add_int32(l.x)
                 self.add_int32(l.y)
-            elif l is bytearray:
+            elif type(l) == bytearray:
                 self.add_uint8(Message.T_BYTES)
                 if len(l) < 128:
                     self.add_uint8(len(l))
@@ -271,15 +271,17 @@ class Message:
                     self.add_uint8(0x80)
                     self.add_int32(len(l))
                 self.add_bytes(l)
-            elif l is Color:
+            elif type(l) == Color:
                 self.add_uint8(Message.T_COLOR)
                 self.add_uint8(l.r)
                 self.add_uint8(l.g)
                 self.add_uint8(l.b)
                 self.add_uint8(l.a)
-            elif l is float:
+            elif type(l) == float:
                 self.add_uint8(Message.T_FLOAT32)
                 self.add_float32(l)
+            else:
+                raise("Cannot encode a " + str(type(l)) + " as TTO.")
             # TODO: There is suppose to be a double condition here, but I feel like I need to differentiate between
             # a float and a double, and I dont know quite how to do that. In python a float is a double, so even the
             # above might not fully work. sys.getsizeof may work, Would need some testing.... A float in python is 64.
