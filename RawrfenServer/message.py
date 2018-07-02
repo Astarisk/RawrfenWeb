@@ -61,6 +61,11 @@ class Message:
         self.ptr += len_
         return val
 
+    def read_remaining(self):
+        val = self.buf[self.ptr:]
+        self.ptr = len(self.buf)
+        return val
+
     def read_int8(self):
         print("READ INT8 NOT IMPLEMENTED....")
 
