@@ -12,6 +12,26 @@ class Color:
         self.a = a
 
 
+class RMessage:
+
+    RMSG_NEWWDG = 0
+    RMSG_WDGMSG = 1
+    RMSG_DSTWDG = 2
+    RMSG_MAPIV = 3
+    RMSG_GLOBLOB = 4
+
+    RMSG_RESID = 6
+    RMSG_PARTY = 7
+    RMSG_SFX = 8
+    RMSG_CATTR = 9
+    RMSG_MUSIC = 10
+    RMSG_TILES = 11
+
+    RMSG_SESSKEY = 13
+    RMSG_FRAGMENT = 14
+    RMSG_ADDWDG = 15
+
+
 class Message:
 
     T_END = 0
@@ -36,13 +56,13 @@ class Message:
         self.ptr = 0
         self.buf = bytearray(buf)
 
-    def read_bytes(self, len):
-        val = self.buf[self.ptr:self.ptr + len]
-        ptr += len
-        return  val
+    def read_bytes(self, len_):
+        val = self.buf[self.ptr:self.ptr + len_]
+        self.ptr += len_
+        return val
 
     def read_int8(self):
-        pass
+        print("READ INT8 NOT IMPLEMENTED....")
 
     def read_uint8(self):
         val = self.buf[self.ptr]
@@ -53,31 +73,38 @@ class Message:
         # 'h' represents a short format
         val = struct.unpack('h', self.buf[self.ptr:self.ptr + 2])
         self.ptr += 2
-        return val
+        return val[0]
 
     def read_uint16(self):
         # 'H' represents an unsigned short format
         val = struct.unpack('H', self.buf[self.ptr:self.ptr + 2])
         self.ptr += 2
-        return val
+        return val[0]
+
+    def read_eunit16(self):
+        # 'H' represents an unsigned short format
+        val = struct.unpack('>H', self.buf[self.ptr:self.ptr + 2])
+        self.ptr += 2
+        # This gets unpacked as a tuple...
+        return val[0]
 
     def read_int32(self):
         # 'i' represents an int format
         val = struct.unpack('i', self.buf[self.ptr:self.ptr + 4])
         self.ptr += 4
-        return val
+        return val[0]
 
     def read_uint32(self):
         # 'I' represents an unsigned int format
         val = struct.unpack('I', self.buf[self.ptr:self.ptr + 4])
         self.ptr += 4
-        return val
+        return val[0]
 
     def read_int64(self):
         # 'q' represents a long long format
         val = struct.unpack('q', self.buf[self.ptr:self.ptr + 8])
         self.ptr += 8
-        return val
+        return val[0]
 
     def read_string(self):
         s = ''
@@ -86,23 +113,22 @@ class Message:
             if c == 0:
                 break
             s += chr(c)
-        # Strings are returned as utf-8 in the hafen client
-        return s.encode("utf-8")
+        return s
 
     def read_float32(self):
         # 'f' represents a float format
         val = struct.unpack('f', self.buf[self.ptr:self.ptr + 4])
         self.ptr += 4
-        return val
+        return val[0]
 
     def read_float64(self):
         # 'd' represents a double format
         val = struct.unpack('d', self.buf[self.ptr:self.ptr + 8])
         self.ptr += 8
-        return val
+        return val[0]
 
     def read_coord(self):
-        return Coord(self.read_int32, self.read_int32)
+        return Coord(self.read_int32(), self.read_int32())
 
     def read_color(self):
         return Color(self.read_uint8(), self.read_uint8(), self.read_uint8(), self.read_uint8())
@@ -127,7 +153,7 @@ class Message:
             elif t == Message.T_UINT8:
                 vals.append(self.read_uint8())
             elif t == Message.T_UINT16:
-                vals.append(self.read_uint8())
+                vals.append(self.read_uint16())
             elif t == Message.T_INT8:
                 vals.append(self.read_int8())
             elif t == Message.T_INT16:
@@ -157,7 +183,8 @@ class Message:
                 #vals.append()
                 print("FCoord64 is not implemented yet.")
             else:
-                print("Type not found when reading.")
+                print("Type not found when reading: " + str(t))
+        return vals
 
     def eom(self):
         if self.ptr >= len(self.buf):
@@ -171,7 +198,7 @@ class Message:
         self.buf.extend(val)
 
     def add_uint8(self, val):
-        self.buf.extend(struct.pack(val))
+        self.buf.append(val)
 
     def add_int16(self, val):
         # 'h' represents a short format
@@ -180,6 +207,10 @@ class Message:
     def add_uint16(self, val):
         # 'H' represents an unsigned short format
         self.buf.extend(struct.pack('H', val))
+
+    def add_euint16(self, val):
+        # 'H' represents an unsigned short format
+        self.buf.extend(struct.pack('>H', val))
 
     def add_int32(self, val):
         # 'i' represents an int format
