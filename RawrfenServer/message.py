@@ -56,6 +56,13 @@ class Message:
         self.ptr = 0
         self.buf = bytearray(buf)
 
+        # Variables used in messages.
+        # Set this if you want to identify the message as certain type of message.
+        self.type = None
+
+        # Set this if you are sending a message to pending
+        self.seq = None
+
     def read_bytes(self, len_):
         val = self.buf[self.ptr:self.ptr + len_]
         self.ptr += len_
