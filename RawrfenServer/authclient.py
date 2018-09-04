@@ -20,9 +20,28 @@ class AuthClient:
         #finally:
         #    self.sk.close()
 
+    # The pw should be hashed already
+    def weblogin(self, username, pw):
+        # Turn the hex string into a bytes array
+        pw = bytes(bytearray.fromhex(pw))
+        rpl = self.cmd("pw", username, pw)
+        stat = rpl.read_string()
+
+        if stat == "ok":
+            acc = rpl.read_string()
+            return True
+        elif stat == "no":
+            err = rpl.read_string()
+            return False
+        else:
+            raise AuthException("Unexpected reply `" + stat + "' from auth server")
+
     def login(self, username, pw):
+        print(bytearray(pw, "utf-8"))
         pw = hashlib.sha256(bytearray(pw, "utf-8"))
         dig = pw.digest()
+        print(dig)
+        print(type(dig))
 
         rpl = self.cmd("pw", username, dig)
         stat = rpl.read_string()

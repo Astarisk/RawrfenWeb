@@ -33,8 +33,14 @@ class Ocache:
         self.gobs = {}
         self.gobs_lock = Lock()
 
-    def getgob(self, id, frame):
+    def getres(self, id):
         pass
+
+    def getgob(self, id, frame):
+        if id in self.gobs:
+            return self.gobs[id]
+        else:
+            self.gobs[id] = Gob(id)
 
     def remove(self, id, frame):
         pass
@@ -308,7 +314,7 @@ class Ocache:
             dat = None
 
     def receive(self, gob, type_, msg):
-        print("Ocache type: " + str(type_))
+        #print("Ocache type: " + str(type_))
 
         if type_ == Ocache.OD_MOVE:
             self.move(gob, msg)
@@ -349,7 +355,7 @@ class Ocache:
         elif type_ == Ocache.OD_RESATTR:
             self.resattr(gob, msg)
         else:
-            print("Unknown objdelta type: " + str(type_))
+            raise Exception("Unknown objdelta type: " + str(type_))
 
 
 class Gob:

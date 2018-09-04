@@ -63,6 +63,12 @@ class Message:
         # Set this if you are sending a message to pending
         self.seq = None
 
+        # Amount of sends the message has had
+        self.retx = 0
+
+        # Last time the message was sent
+        self.last = 0
+
     def read_bytes(self, len_):
         val = self.buf[self.ptr:self.ptr + len_]
         self.ptr += len_
@@ -74,7 +80,9 @@ class Message:
         return val
 
     def read_int8(self):
-        print("READ INT8 NOT IMPLEMENTED....")
+        val = self.buf[self.ptr]
+        self.ptr += 1
+        return val
 
     def read_uint8(self):
         val = self.buf[self.ptr]
@@ -195,7 +203,7 @@ class Message:
                 #vals.append()
                 print("FCoord64 is not implemented yet.")
             else:
-                print("Type not found when reading: " + str(t))
+                raise Exception("Type not found when reading: " + str(t))
         return vals
 
     def eom(self):
@@ -281,7 +289,7 @@ class Message:
                 self.add_uint8(Message.T_FLOAT32)
                 self.add_float32(l)
             else:
-                raise("Cannot encode a " + str(type(l)) + " as TTO.")
+                raise Exception("Cannot encode a " + str(type(l)) + " as TTO.")
             # TODO: There is suppose to be a double condition here, but I feel like I need to differentiate between
             # a float and a double, and I dont know quite how to do that. In python a float is a double, so even the
             # above might not fully work. sys.getsizeof may work, Would need some testing.... A float in python is 64.

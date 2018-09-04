@@ -3,6 +3,7 @@
 from message import Message, RMessage
 from threading import Thread
 
+import json
 
 class UI:
 
@@ -13,6 +14,12 @@ class UI:
         self.remoteui_thread = Thread(target=self.remoteui)
         self.remoteui_thread.daemon = True
         self.remoteui_thread.start()
+
+        self.charlist = None
+
+        self.chats = {}
+        self.areaChat = None
+
     # These methods are the core of botting, and the foundation of this class. For consistency I'll keep these going.
 
     # public void addwidget(int id, int parent, Object[] pargs)
@@ -23,10 +30,39 @@ class UI:
     def newwidget(self, id_, type_, parent, pargs, cargs):
         print("\n" + "id: " + str(id_) + "\ttype: " + str(type_) + "\tparent: " + str(parent) + "\tpargs: " + str(
             pargs) + "\tcargs: " + str(cargs))
+        if type_ == "charlist":
+            self.charlist = id_
+
+        # Area and Village chat seem to take the form of mchat
+        # Realm chat seems to be ui/rchan:18... so if type_ in ui/rchan:
+        # Private chat is just pmchat
+        if type_ == "mchat":
+            self.chats[id_] = cargs[0]
+            print("Found " + str(cargs[0]))
 
     # public void uimsg(int id, String msg, Object... args)
-    def uimsg(self, id_, name, args):
-        print("\n" + "id: " + str(id_) + "\tmsg: " + str(name) + "\targs: " + str(args))
+    def uimsg(self, id_, msg, args):
+        print("\n" + "id: " + str(id_) + "\tmsg: " + str(msg) + "\targs: " + str(args))
+
+        # TODO: Clean and refactor below. This needs to be much cleaner.
+        if msg == "add":
+
+            if self.charlist == id_:
+                print("adding a character to the charlist...")
+
+                self.sess.websocket.sendMessage(json.dumps({
+                    'type': 'char_add',
+                    'name': args[0]
+                }))
+
+        if msg == "msg":
+            if id_ in self.chats:
+                print("Sending off a chat msg...")
+                self.sess.websocket.sendMessage(json.dumps({
+                    'type': 'chat_msg',
+                    'name': self.chats[id_],
+                    'msg': args
+                }))
 
     # public void destroy(int id)
     def destroy(self, id_):
