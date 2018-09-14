@@ -18,7 +18,7 @@ class ObjAck:
 
 class Session:
     # Client version
-    PVER = 15
+    PVER = 17
 
     # Message types
     MSG_SESS = 0
@@ -254,6 +254,8 @@ class Session:
                 elif msg_type == RMessage.RMSG_MUSIC:
                     pass
                 elif msg_type == RMessage.RMSG_SESSKEY:
+                    pass
+                elif msg_type == RMessage.RMSG_FRAGMENT:
                     pass
                 else:
                     raise Exception("<<< UNSUPPORTED RMESSAGE TYPE OF : " + str(msg_type))

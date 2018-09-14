@@ -22,6 +22,8 @@ class Main(WebSocket):
     def handleMessage(self):
         # Dispatch the message based on type
         # First turn the data into a json for easier handling.
+        print("Received a message from the webclient...")
+        print(self.data)
         msg = json.loads(self.data)
 
         if msg["type"] == "login":
@@ -42,6 +44,9 @@ class Main(WebSocket):
 
         if msg["type"] == "play":
             self.ui.sess.queuemsg(utils.login(msg["name"], self.ui.charlist))
+
+        if msg["type"] == "chat_msg":
+            self.ui.sess.queuemsg(utils.send_chat_msg(int(msg["chat_id"]), msg["chat_msg"]))
 
     def handleConnected(self):
         print(self.address, 'connected')

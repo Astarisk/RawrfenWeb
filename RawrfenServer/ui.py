@@ -36,9 +36,15 @@ class UI:
         # Area and Village chat seem to take the form of mchat
         # Realm chat seems to be ui/rchan:18... so if type_ in ui/rchan:
         # Private chat is just pmchat
-        if type_ == "mchat":
+        if type_ == "mchat" or "ui/rchan" in type_ or type_ == "pmchat":
             self.chats[id_] = cargs[0]
             print("Found " + str(cargs[0]))
+            self.sess.websocket.sendMessage(json.dumps({
+                'type': 'chat_add',
+                'id': id_,
+                'name': str(cargs[0])
+            }))
+
 
     # public void uimsg(int id, String msg, Object... args)
     def uimsg(self, id_, msg, args):
@@ -49,7 +55,6 @@ class UI:
 
             if self.charlist == id_:
                 print("adding a character to the charlist...")
-
                 self.sess.websocket.sendMessage(json.dumps({
                     'type': 'char_add',
                     'name': args[0]
@@ -60,7 +65,7 @@ class UI:
                 print("Sending off a chat msg...")
                 self.sess.websocket.sendMessage(json.dumps({
                     'type': 'chat_msg',
-                    'name': self.chats[id_],
+                    'chat_id': id_,
                     'msg': args
                 }))
 
